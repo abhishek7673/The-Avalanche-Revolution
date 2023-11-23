@@ -1,0 +1,201 @@
+Exchange Chain, or the X-Chain, is where all the action happens with digital smart assets known as Avalanche Native Tokens.
+
+Contract Chain, or the C-Chain, is an implementation of the Ethereum Virtual Machine (EVM) where you can flex your Solidity skills and create and execute smart contracts.
+
+Platform Chain, or the P-Chain, is where the magic happens 🧙‍♂️, supporting the creation of new blockchains and subnets, staking operations, and more.
+Project Setup:
+1. Create a folder for your new project, and run npm init
+cd your-project
+npm init -y
+2 Install hardhat
+npm install --save-dev hardhat
+3. Initialize your hardhat project
+npx hardhat
+888    888                      888 888               888
+888    888                      888 888               888
+888    888                      888 888               888
+8888888888  8888b.  888d888 .d88888 88888b.   8888b.  888888
+888    888     "88b 888P"  d88" 888 888 "88b     "88b 888
+888    888 .d888888 888    888  888 888  888 .d888888 888
+888    888 888  888 888    Y88b 888 888  888 888  888 Y88b.
+888    888 "Y888888 888     "Y88888 888  888 "Y888888  "Y888
+
+👷 Welcome to Hardhat v2.9.9 👷‍
+
+? What do you want to do? …
+❯ Create a JavaScript project
+  Create a TypeScript project
+  Create an empty hardhat.config.js
+  Quit
+4. npm install @openzeppelin/contracts
+After that's inside the contracts folder, we'll create a Points.sol file, and put the following inside of it:
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.9;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract Points is ERC20, Ownable {
+    constructor() ERC20("Points", "PTS") {}
+
+    function mint(address to, uint256 amount) public onlyOwner {
+        _mint(to, amount);
+    }
+}
+Project Configuration:
+To configure Hardhat to work with Avalanche by default, the first step is to add Avalanche to its supported chains. For initial testing purposes, we will use Avalanche's Fuji test network, a C-Chain test network that allows us to test our smart contracts. Once everything is thoroughly tested and working as expected, we can deploy it to Avalanche's Mainnet. To accomplish this, we need to follow the steps below:
+
+We need to add Avalanche as a supported network in Hardhat's configuration. This can be done by modifying the configuration file to include the necessary parameters for Avalanche.
+
+When using the hardhat network, you may choose to fork Fuji or Avalanche Mainnet. This will allow you to debug contracts using the hardhat network while keeping the current network state. To enable forking, turn one of these booleans on, and then run your tasks/scripts using --network hardhat
+
+Delete the existing module.exports code and add the following code to your hardhat.config.js file. This will enable us to test our smart contracts on the local network with data from Avalanche Mainnet.
+const FORK_FUJI = false
+const FORK_MAINNET = false
+let forkingData = undefined;
+
+if (FORK_MAINNET) {
+  forkingData = {
+    url: 'https://api.avax.network/ext/bc/C/rpcc',
+  }
+}
+if (FORK_FUJI) {
+  forkingData = {
+    url: 'https://api.avax-test.network/ext/bc/C/rpc',
+  }
+}
+Next, we must add the Avalanche chains to our Hardhat configuration by adding the following code after the previously added code snippet.
+/** @type import('hardhat/config').HardhatUserConfig */
+module.exports = {
+  solidity: "0.8.18",
+  networks: {
+    hardhat: {
+      gasPrice: 225000000000,
+      chainId: !forkingData ? 43112 : undefined, //Only specify a chainId if we are not forking
+      forking: forkingData
+    },
+    fuji: {
+      url: 'https://api.avax-test.network/ext/bc/C/rpc',
+      gasPrice: 225000000000,
+      chainId: 43113,
+      accounts: [
+        // "YOUR PRIVATE KEY HERE"
+      ]
+    },
+    mainnet: {
+      url: 'https://api.avax.network/ext/bc/C/rpc',
+      gasPrice: 225000000000,
+      chainId: 43114,
+      accounts: [
+        // "YOUR PRIVATE KEY HERE"
+      ]
+    }
+  }
+}
+To learn more about forking Mainnet on Hardhat, and gaining access to all the smart contracts on it, visit https://hardhat.org/guides/mainnet-forking.html.
+
+require("@nomicfoundation/hardhat-toolbox");
+
+const FORK_FUJI = false;
+const FORK_MAINNET = false;
+let forkingData = undefined;
+
+if (FORK_MAINNET) {
+  forkingData = {
+    url: "https://api.avax.network/ext/bc/C/rpcc",
+  };
+}
+if (FORK_FUJI) {
+  forkingData = {
+    url: "https://api.avax-test.network/ext/bc/C/rpc",
+  };
+}
+
+/** @type import('hardhat/config').HardhatUserConfig */
+module.exports = {
+  solidity: "0.8.18",
+  networks: {
+    hardhat: {
+      gasPrice: 225000000000,
+      chainId: !forkingData ? 43112 : undefined, //Only specify a chainId if we are not forking
+      forking: forkingData
+    },
+    fuji: {
+      url: 'https://api.avax-test.network/ext/bc/C/rpc',
+      gasPrice: 225000000000,
+      chainId: 43113,
+      accounts: [
+        // YOUR PRIVATE KEY HERE
+      ]
+    },
+    mainnet: {
+      url: 'https://api.avax.network/ext/bc/C/rpc',
+      gasPrice: 225000000000,
+      chainId: 43114,
+      accounts: [
+        // YOUR PRIVATE KEY HERE
+      ]
+    }
+  }
+}
+Building on the C-Chain
+Verification:
+One additional step is to verify the deployed smart contract. To do this, we need an API Key from Snowtrace. You will need to provide an email address to complete this step, but it is straightforward. Get started here..
+
+Once your account is set up, you can go to your API Keys section and create a key from there.
+
+Once you have your new API key, we can paste it into our Hardhat config file like so (outside of the network config):
+module.exports = {
+  // ...rest of the config...
+  etherscan: {
+    apiKey: "YOUR API KEY",
+  },
+};
+Now we have access to the verify task, which allows us to verify smart contracts on specific networks.
+npx hardhat verify <contract address> <arguments> --network <network>
+Scripts:
+const hre = require("hardhat");
+
+async function main() {
+  // Get the Points smart contract
+  const Points = await hre.ethers.getContractFactory("Points");
+
+  // Deploy it
+  const points = await Points.deploy();
+  await points.waitForDeployment();
+
+  // Display the contract address
+  console.log(`Points token deployed to ${points.target}`);
+}
+
+// Hardhat recommends this pattern to be able to use async/await everywhere
+// and properly handle errors.
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
+
+Deploying:
+Deploying
+Now, we need to deploy our smart contract. First, we are going to deploy our Token to testnet. To do that, we need to get some Testnet AVAX from the Faucet. You can get that here: https://faucet.avax.network/.
+
+Assuming you have a wallet setup on your browser, we now need to connect to the Fuji Testnet, and add the network to your wallet. Here’s all the information that a wallet like Metamask requires to connect to a chain:
+
+Network Name: Avalanche Fuji C-Chain New RPC URL: https://api.avax-test.network/ext/bc/C/rpc ChainID: 43113 Symbol: AVAX Explorer: https://testnet.snowtrace.io/
+There is a quick way to connect to the Fuji (C-Chain), Below the main modal in the faucet, you'll see a 🦊 Add Subnet to Metamask button. If you press it, it will automate the process of adding the network to your wallet.
+$ npx hardhat run scripts/deploy.js --network fuji
+
+You should see a printout in the console similar to this:
+$ npx hardhat run scripts/deploy.js --network fuji
+Points token deployed to <YOUR TOKEN ADDRESS>
+
+If you have set up your API key, we can verify the smart contract on Fuji by running the following command:
+$ npx hardhat verify <YOUR TOKEN ADDRESS> --network fuji
+
+Now, we can go to https://testnet.snowtrace.io/ and search for our smart contract using the same address that we used before, and there it is, our Points token, with a verified contract.
+
+This is great, but we need to deploy the smart contract to the mainnet for complete security. (NOTE: This next step is optional. It is provided simply so you know how this would work for mainnet.)
+
+To do this, you need real AVAX. You can buy AVAX from sites like Binance or Coinbase and transfer it to your wallet address, the same address you defined in your hardhat.config.js. Once your wallet is funded, you can run:
+$ npx hardhat run scripts/deploy.js --network mainnet
+$ npx hardhat verify <YOUR TOKEN ADDRESS> --network mainnet
